@@ -123,11 +123,6 @@
         <input type="password" id="li_pass" autocomplete="current-password" placeholder="Admin password"></label>
       <button class="btn" id="li_btn" style="width:100%">Unlock</button>
       <div class="err" id="li_err"></div>
-      <details class="help">
-        <summary>Forget this device / reset</summary>
-        <p class="muted">This removes the encrypted token from this browser. You'll need your token again to set up.</p>
-        <button class="btn-danger btn-sm" id="li_reset">Reset local data</button>
-      </details>
     </div>
   </div>
 
@@ -137,7 +132,8 @@
       <div class="brand">● SITE ADMIN</div>
       <nav id="nav"></nav>
       <div style="margin-top:1rem">
-        <button class="btn-danger btn-sm" id="logout" style="width:100%">Log out</button>
+        <button class="btn-ghost btn-sm" id="logout" style="width:100%">Log out</button>
+        <button class="btn-danger btn-sm" id="reset" style="width:100%; margin-top:.5rem">Reset / change token</button>
       </div>
     </aside>
     <div class="main">

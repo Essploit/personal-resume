@@ -642,8 +642,12 @@
     $('su_btn').addEventListener('click', doSetup);
     $('li_btn').addEventListener('click', doLogin);
     $('li_pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
-    $('li_reset').addEventListener('click', function () {
-      localStorage.removeItem(LS_KEY); toast('Local data cleared.'); show('setup');
+    $('reset').addEventListener('click', function () {
+      if (!confirm('Reset this browser? This removes the saved login and encrypted token from THIS device only. You will need your GitHub token to set up again.')) return;
+      state.token = null; state.content = null;
+      localStorage.removeItem(LS_KEY);
+      toast('Local data cleared.');
+      show('setup');
     });
     $('logout').addEventListener('click', function () {
       state.token = null; state.content = null; $('li_pass').value = ''; show('login');
