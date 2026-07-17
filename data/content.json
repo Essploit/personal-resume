@@ -1,0 +1,182 @@
+{
+  "site": {
+    "title": "Erik Allmuca — Personal Resume / Portfolio",
+    "metaDescription": "Erik Allmuca — Cybersecurity Enthusiast & Developer. Portfolio, certificates and projects.",
+    "logo": "assets/img/site-logo.svg",
+    "favicon": "assets/img/favicon.svg"
+  },
+  "profile": {
+    "name": "Erik Allmuca",
+    "mobileBrand": "Personal Resume",
+    "photo": "assets/img/user-sidebar.png",
+    "roles": ["Cybersecurity", "Development", "Networking"],
+    "residence": "Albania",
+    "city": "Tirana",
+    "age": "19",
+    "cvFile": "mycv.pdf",
+    "sidebarSkills": [
+      { "name": "Cybersecurity", "percent": 60, "label": "60%" },
+      { "name": "Networking", "percent": 70, "label": "80%" },
+      { "name": "Ai/Ml", "percent": 50, "label": "70%" },
+      { "name": "Linux", "percent": 50, "label": "90%" }
+    ]
+  },
+  "social": {
+    "linkedin": "https://www.linkedin.com/in/erik-allmuça-2b0580261/",
+    "github": "https://github.com/Essploit"
+  },
+  "hero": {
+    "badge": "INTRODUCE",
+    "titleLine1": "I Secure The",
+    "titleHighlight": "Digital Landscape",
+    "intro": "I am a <span class=\"font-medium text-black dark:text-white/90\">Cybersecurity Enthusiast &amp; Developer</span> at heart and, i create features that are best suited for the job at hand. With a strong focus on ethical hacking, system hardening, and proactive threat mitigation, I go beyond conventional security practices."
+  },
+  "about": {
+    "badge": "ABOUT ME",
+    "titleNormal": "About",
+    "titleHighlight": "Me",
+    "bio": "Hi, my name is <span class=\"text-black dark:text-white\">Erik Allmuca</span> I began my journey in cybersecurity over 3.5 years ago and have since dedicated myself to protecting digital systems, analyzing vulnerabilities, and strengthening network defenses. With a strong focus on ethical hacking, system hardening, and proactive threat mitigation, I go beyond conventional security practices — delivering tailored, high-impact solutions. <span class=\"text-black dark:text-white\">Cybersecurity</span> isn't just my field — it's my passion and mission.",
+    "details": [
+      { "label": "Phone", "value": "+(355) 068 261 5998" },
+      { "label": "Email", "value": "allmucaerik1@gmail.com" },
+      { "label": "Github", "value": "github.com/Essploit" },
+      { "label": "Language", "value": "English, Albanian" }
+    ],
+    "counters": [
+      { "number": "2", "suffix": "+", "label": "Years Of Experience" },
+      { "number": "5", "suffix": "+", "label": "Handled Projects" },
+      { "number": "10", "suffix": "+", "label": "Open Source Libraries" },
+      { "number": "23", "suffix": "", "label": "Certificates" }
+    ]
+  },
+  "services": {
+    "badge": "SERVICES",
+    "titleNormal": "My",
+    "titleHighlight": "Services",
+    "subtitle": "With over 3.5 years of hands-on experience, I offer a unique blend of cybersecurity expertise and full-stack development to help individuals, startups, and organizations build secure and scalable digital solutions.",
+    "items": [
+      { "number": "01", "icon": "web", "title": "Web Development", "desc": "I build secure, scalable web apps using Python, Django, and React — designed to perform and last." },
+      { "number": "02", "icon": "shield", "title": "Cybersecurity", "desc": "I protect systems from real-world threats with ethical hacking, secure architecture, and proactive defense." },
+      { "number": "03", "icon": "gear", "title": "Security-Focused Development", "desc": "Code isn’t just functional — I write it with security baked in, from APIs to user authentication." },
+      { "number": "04", "icon": "strategy", "title": "Technical Strategy", "desc": "I design products that are more than pretty. I make them shippable." }
+    ]
+  },
+  "skills": {
+    "badge": "SKILLS",
+    "titleNormal": "My",
+    "titleHighlight": "Advantages",
+    "subtitle": "",
+    "items": [
+      { "name": "Figma", "img": "assets/img/skill/react.svg", "percent": 50 },
+      { "name": "Django", "img": "assets/img/skill/django.svg", "percent": 50 },
+      { "name": "Cybersecurity", "img": "assets/img/skill/cybersecurity.svg", "percent": 60 },
+      { "name": "HTML5", "img": "assets/img/skill/html.svg", "percent": 75 },
+      { "name": "CSS3", "img": "assets/img/skill/css.svg", "percent": 95 },
+      { "name": "Linux", "img": "assets/img/skill/linux.svg", "percent": 95 },
+      { "name": "Microsoft", "img": "assets/img/skill/microsoft.svg", "percent": 70 }
+    ]
+  },
+  "resume": {
+    "badge": "RESUME",
+    "experience": {
+      "titleNormal": "Work",
+      "titleHighlight": "Experience",
+      "subtitle": "My work experience through years. Providing smooth support and services.",
+      "items": [
+        {
+          "company": "Setup SH.P.K",
+          "period": "June, 2024 - Current",
+          "role": "IT Technican & Support",
+          "desc": "SETUP IT Solutions — [Tirana/Albania]\nJune 2024 – Present\n\nProvided day-to-day technical support to internal staff, ensuring smooth IT operations across the company.\n\nConfigured and deployed PCs within a Windows Domain environment, maintaining proper group policies and user permissions.\n\nManaged user accounts in Windows Server, including creation, deletion, and access rights adjustments using Active Directory.\n\nInstalled, configured, and maintained network devices including routers and switches, ensuring secure and reliable network connectivity.\n\nPerformed system formatting and OS installation, including driver and essential software setup for end-users.\n\nDiagnosed and resolved hardware, software, and networking issues across the organization.\n\nMaintained IT documentation and supported onboarding/offboarding procedures from an IT infrastructure standpoint."
+        }
+      ]
+    },
+    "education": {
+      "titleNormal": "My",
+      "titleHighlight": "Education",
+      "subtitle": "My education is still in progress. I am atending High School at the moment",
+      "items": [
+        { "school": "University", "period": "In Progress ...", "degree": "", "desc": "" }
+      ]
+    }
+  },
+  "portfolio": {
+    "badge": "PORTFOLIO",
+    "titleNormal": "Featured",
+    "titleHighlight": "Projects",
+    "subtitle": "This is my portfolio where all my project will be revealed.",
+    "moreButton": { "text": "Coming soon...", "href": "#" },
+    "items": [
+      {
+        "title": "Finny",
+        "subtitle": "Banking App for Kids - Part of Raiffeisen Bank project",
+        "tag": "Banking",
+        "image": "assets/img/portfolio/portfolio-img1.png",
+        "href": "#",
+        "wide": true
+      },
+      {
+        "title": "Digital",
+        "subtitle": "Garden",
+        "tag": "Digital Garden",
+        "image": "assets/img/portfolio/portfolio-img2.png",
+        "href": "https://essploit.github.io/null-grove/",
+        "wide": true
+      }
+    ]
+  },
+  "certificates": {
+    "badge": "Certificates",
+    "titleNormal": "My",
+    "titleHighlight": "Certificates",
+    "subtitle": "These are my certificates that i have been awarded over the years.",
+    "moreButton": { "text": "All Certificates", "href": "all-blogs.html" },
+    "items": [
+      {
+        "image": "assets/img/blog/article1.png",
+        "skills": "Cybersecurity · Network Security · Cyber Defense · Networking · Network Devices",
+        "title": "Network Defense",
+        "href": "https://www.credly.com/users/erik-allmuca/"
+      },
+      {
+        "image": "assets/img/blog/article7.png",
+        "skills": "Cybersecurity · Python (Programming Language) · Penetration Testing · CTF · Malware Analysis · Red Teaming · DFIR · Network Security · Security · Ethical Hacking · Cyber Defense · Networking · DevSecOps",
+        "title": "CyberSecurity",
+        "href": "https://app.diplomasafe.com/en-US/diploma/d5dde95d559ed751cac9d3cbec18e0b54d5ca6329"
+      },
+      {
+        "image": "assets/img/blog/article3.png",
+        "skills": "Offensive Security · Kali Linux · Metasploit · Ethical Hacking · Find Vulnerabilities",
+        "title": "Ethical Hacker",
+        "href": "https://www.credly.com/users/erik-allmuca/"
+      }
+    ]
+  },
+  "ctf": {
+    "badge": "CTF",
+    "titleNormal": "Capture The",
+    "titleHighlight": "Flag",
+    "subtitle": "A look at one of my favorite sites for hacking TryHackMe.",
+    "items": [
+      {
+        "image": "assets/img/ctf/ctf1.png",
+        "href": "https://tryhackme.com/p/Essploit",
+        "label": "View Profile"
+      }
+    ]
+  },
+  "contact": {
+    "badge": "CONTACT",
+    "titleNormal": "Contact",
+    "titleHighlight": "Me.",
+    "subtitle": "Feel free to contact me through this contact form !",
+    "location": "Tirana",
+    "email": "allmucaerik1@gmail.com",
+    "phone": "+355 068 261 5998",
+    "formEndpoint": ""
+  },
+  "footer": {
+    "prefix": "Copyright by",
+    "name": "Erik Allmuca 2025 ©"
+  }
+}

@@ -1,0 +1,10 @@
+# Dependencies / build
+node_modules/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+
+# Local setup notes — contains the admin password, keep private
+SETUP.md

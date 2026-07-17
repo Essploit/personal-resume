@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Site Admin — Content Editor</title>
+  <link rel="shortcut icon" href="../assets/img/favicon.svg">
+  <style>
+    :root {
+      --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --border: #2a2f3a;
+      --text: #e6e8ec; --muted: #9aa3b2; --theme: #00BC91; --themeHover: #00a07c;
+      --danger: #ef4444; --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5; }
+    a { color: var(--theme); }
+    h1,h2,h3 { margin: 0 0 .5rem; font-weight: 600; }
+    .muted { color: var(--muted); font-size: .85rem; }
+    button { font: inherit; cursor: pointer; border: none; border-radius: var(--radius); }
+    .btn { background: var(--theme); color: #fff; padding: .65rem 1.1rem; font-weight: 600; transition: background .2s; }
+    .btn:hover { background: var(--themeHover); }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .btn-ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--theme); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-sm { padding: .35rem .7rem; font-size: .8rem; }
+    input, textarea, select {
+      width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+      border-radius: 10px; padding: .6rem .7rem; font: inherit; outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--theme); }
+    textarea { min-height: 90px; resize: vertical; }
+    label.field { display: block; margin-bottom: 1rem; }
+    label.field > .lbl { display: block; font-size: .8rem; color: var(--muted); margin-bottom: .3rem; }
+
+    /* Centered auth cards */
+    .center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+      padding: 2rem; width: 100%; max-width: 460px; }
+    .card .logo { color: var(--theme); font-weight: 700; letter-spacing: .5px; margin-bottom: 1rem; }
+    .err { color: var(--danger); font-size: .85rem; min-height: 1.1rem; margin-top: .25rem; }
+    .ok { color: var(--theme); }
+
+    /* App layout */
+    #app { display: none; grid-template-columns: 240px 1fr; min-height: 100vh; }
+    .sidebar { background: var(--panel); border-right: 1px solid var(--border); padding: 1rem; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .sidebar .brand { color: var(--theme); font-weight: 700; padding: .5rem; margin-bottom: 1rem; }
+    .nav-item { display: block; width: 100%; text-align: left; background: transparent; color: var(--muted);
+      padding: .55rem .7rem; border-radius: 10px; margin-bottom: .15rem; }
+    .nav-item:hover { background: var(--panel2); color: var(--text); }
+    .nav-item.active { background: var(--panel2); color: var(--theme); font-weight: 600; }
+    .main { padding: 0; min-width: 0; }
+    .topbar { position: sticky; top: 0; z-index: 5; background: rgba(15,17,21,.85); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border); padding: .9rem 1.5rem; display: flex; align-items: center; gap: .75rem; }
+    .topbar .spacer { flex: 1; }
+    .content { padding: 1.5rem; max-width: 860px; }
+    .section-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .list-item { background: var(--panel2); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; position: relative; }
+    .list-item .item-head { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
+    .list-item .item-head .ttl { font-weight: 600; font-size: .9rem; flex: 1; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+    @media (max-width: 640px){ .grid2 { grid-template-columns: 1fr; } #app { grid-template-columns: 1fr; } .sidebar { position: static; height: auto; } }
+    .img-field { display: flex; gap: 1rem; align-items: flex-start; }
+    .img-field .preview { width: 90px; height: 90px; flex: 0 0 90px; border: 1px solid var(--border); border-radius: 10px;
+      object-fit: cover; background: var(--bg); }
+    .img-field .img-controls { flex: 1; }
+    .row { display: flex; gap: .5rem; align-items: center; }
+    .switch { display: inline-flex; align-items: center; gap: .5rem; }
+    .switch input { width: auto; }
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--panel); border: 1px solid var(--border);
+      border-left: 4px solid var(--theme); padding: .9rem 1.2rem; border-radius: 10px; max-width: 360px;
+      opacity: 0; transform: translateY(10px); transition: all .25s; z-index: 50; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { border-left-color: var(--danger); }
+    .hint { font-size: .78rem; color: var(--muted); margin-top: .35rem; }
+    details.help { margin-top: 1rem; }
+    details.help summary { cursor: pointer; color: var(--theme); }
+    code { background: var(--panel2); padding: .1rem .35rem; border-radius: 5px; font-size: .85em; }
+  </style>
+</head>
+<body>
+
+  <!-- FIRST-TIME SETUP -->
+  <div id="setup" class="center" style="display:none">
+    <div class="card">
+      <div class="logo">● SITE ADMIN</div>
+      <h2>First-time setup</h2>
+      <p class="muted">This runs entirely in your browser. Your GitHub token is encrypted with your password and stored only on this device.</p>
+      <label class="field"><span class="lbl">Choose an admin password</span>
+        <input type="password" id="su_pass" autocomplete="new-password" placeholder="Strong password"></label>
+      <label class="field"><span class="lbl">Confirm password</span>
+        <input type="password" id="su_pass2" autocomplete="new-password" placeholder="Repeat password"></label>
+      <div class="grid2">
+        <label class="field"><span class="lbl">GitHub username / org</span>
+          <input type="text" id="su_owner" placeholder="e.g. Essploit"></label>
+        <label class="field"><span class="lbl">Repository name</span>
+          <input type="text" id="su_repo" placeholder="e.g. personal-resume"></label>
+      </div>
+      <label class="field"><span class="lbl">Branch</span>
+        <input type="text" id="su_branch" value="main"></label>
+      <label class="field"><span class="lbl">GitHub fine-grained token</span>
+        <input type="password" id="su_token" autocomplete="off" placeholder="github_pat_…">
+        <div class="hint">Token needs <strong>Contents: Read &amp; write</strong> on this repo only. See SETUP.md for steps.</div>
+      </label>
+      <button class="btn" id="su_btn" style="width:100%">Save &amp; continue</button>
+      <div class="err" id="su_err"></div>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="login" class="center" style="display:none">
+    <div class="card">
+      <div class="logo">● SITE ADMIN</div>
+      <h2>Sign in</h2>
+      <p class="muted">Enter your admin password to unlock the editor.</p>
+      <label class="field"><span class="lbl">Password</span>
+        <input type="password" id="li_pass" autocomplete="current-password" placeholder="Admin password"></label>
+      <button class="btn" id="li_btn" style="width:100%">Unlock</button>
+      <div class="err" id="li_err"></div>
+      <details class="help">
+        <summary>Forget this device / reset</summary>
+        <p class="muted">This removes the encrypted token from this browser. You'll need your token again to set up.</p>
+        <button class="btn-danger btn-sm" id="li_reset">Reset local data</button>
+      </details>
+    </div>
+  </div>
+
+  <!-- EDITOR APP -->
+  <div id="app">
+    <aside class="sidebar">
+      <div class="brand">● SITE ADMIN</div>
+      <nav id="nav"></nav>
+      <div style="margin-top:1rem">
+        <button class="btn-danger btn-sm" id="logout" style="width:100%">Log out</button>
+      </div>
+    </aside>
+    <div class="main">
+      <div class="topbar">
+        <strong id="sectionTitle">Editing</strong>
+        <span class="spacer"></span>
+        <a class="btn-ghost btn-sm" href="../index.html" target="_blank" style="text-decoration:none">View site ↗</a>
+        <button class="btn" id="save">Save changes</button>
+      </div>
+      <div class="content" id="formRoot"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

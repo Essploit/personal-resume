@@ -468,7 +468,7 @@
                             </p>
                         </div><!--./section-title-->
 
-                        <div class="portfolio_wrapper grid sm:grid-cols-2 gap-4 lg:gap-7.5 *:relative *:z-1">
+                        <div class="portfolio_wrapper grid sm:grid-cols-2 gap-4 lg:gap-7.5 *:relative *:z-1" data-cms-list="portfolio.items">
                             <div class="item md:col-span-2 group">
                                 <a href="project-single.html"
                                     class="block p-3 overflow-hidden border md:p-4 rounded-xl border-platinum dark:border-greyBlack">
@@ -803,16 +803,8 @@
     <!-- Style Switcher End -->
 
     <!-- Js Library Start -->
-    <script src="assets/js/jquery-3.6.0.min.js"></script>
-    <script src="assets/js/waypoints.min.js"></script>
-    <script src="assets/js/tw-elements.umd.min.js"></script>
-    <script src="assets/js/cd-headline.js"></script>
-    <script src="assets/js/jquery.counterup.min.js"></script>
-    <script src="assets/js/swiper-bundle.min.js"></script>
-    <script src="assets/js/scrollIt.min.js"></script>
-    <script src="assets/js/circle-progress.min.js"></script>
-    <script src="assets/js/script.js"></script>
-    <script src="assets/js/theme-mode.js"></script>
+    <!-- cms.js hydrates content.json, then loads the theme scripts. -->
+    <script src="assets/js/cms.js"></script>
     <!-- Js Library End -->
 </body>
 
