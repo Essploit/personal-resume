@@ -631,6 +631,14 @@
         '<p class="muted">This admin needs a modern browser over HTTPS (or localhost).</p></div></div>';
       return;
     }
+
+    // Ask the browser to keep this site's stored login (best effort). This
+    // helps prevent the encrypted token from being evicted; it does NOT
+    // override a manual "clear cookies/site data on close" setting or a
+    // private window — for those, add a site-data exception in the browser.
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(function () {});
+    }
     $('su_btn').addEventListener('click', doSetup);
     $('li_btn').addEventListener('click', doLogin);
     $('li_pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });

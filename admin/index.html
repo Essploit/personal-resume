@@ -86,26 +86,30 @@
   <div id="setup" class="center" style="display:none">
     <div class="card">
       <div class="logo">● SITE ADMIN</div>
-      <h2>First-time setup</h2>
-      <p class="muted">This runs entirely in your browser. Your GitHub token is encrypted with your password and stored only on this device.</p>
+      <h2>Set up this browser</h2>
+      <p class="muted">Runs entirely in your browser. Your token is encrypted with your password and stored only on this device. Do this once — afterwards you sign in with just your password.</p>
       <label class="field"><span class="lbl">Choose an admin password</span>
         <input type="password" id="su_pass" autocomplete="new-password" placeholder="Strong password"></label>
       <label class="field"><span class="lbl">Confirm password</span>
         <input type="password" id="su_pass2" autocomplete="new-password" placeholder="Repeat password"></label>
-      <div class="grid2">
-        <label class="field"><span class="lbl">GitHub username / org</span>
-          <input type="text" id="su_owner" placeholder="e.g. Essploit"></label>
-        <label class="field"><span class="lbl">Repository name</span>
-          <input type="text" id="su_repo" placeholder="e.g. personal-resume"></label>
-      </div>
-      <label class="field"><span class="lbl">Branch</span>
-        <input type="text" id="su_branch" value="main"></label>
       <label class="field"><span class="lbl">GitHub fine-grained token</span>
         <input type="password" id="su_token" autocomplete="off" placeholder="github_pat_…">
-        <div class="hint">Token needs <strong>Contents: Read &amp; write</strong> on this repo only. See SETUP.md for steps.</div>
+        <div class="hint">Needs <strong>Contents: Read &amp; write</strong> on this repo only.</div>
       </label>
-      <button class="btn" id="su_btn" style="width:100%">Save &amp; continue</button>
+      <details class="help">
+        <summary>Repository settings (already filled in)</summary>
+        <div class="grid2" style="margin-top:.75rem">
+          <label class="field"><span class="lbl">GitHub username / org</span>
+            <input type="text" id="su_owner" value="Essploit"></label>
+          <label class="field"><span class="lbl">Repository name</span>
+            <input type="text" id="su_repo" value="personal-resume"></label>
+        </div>
+        <label class="field"><span class="lbl">Branch</span>
+          <input type="text" id="su_branch" value="main"></label>
+      </details>
+      <button class="btn" id="su_btn" style="width:100%; margin-top:.5rem">Save &amp; continue</button>
       <div class="err" id="su_err"></div>
+      <p class="hint" style="margin-top:1rem">Asked to set up on <em>every</em> visit? Firefox is deleting this site's data on exit. Fix it once: <strong>Settings → Privacy &amp; Security → Cookies and Site Data → Manage Exceptions</strong>, add <code>https://essploit.github.io</code>, choose <strong>Allow</strong>, Save.</p>
     </div>
   </div>
 
