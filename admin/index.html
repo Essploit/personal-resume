@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
+  <!-- Hard lock-down: only our own scripts may run, and the page may only talk
+       to GitHub's API. Even if content ever injected a <script>, it cannot run
+       and cannot exfiltrate the token. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.github.com; form-action 'none'; base-uri 'none'">
   <title>Site Admin — Content Editor</title>
   <link rel="shortcut icon" href="../assets/img/favicon.svg">
   <style>
@@ -75,6 +79,34 @@
     .toast.show { opacity: 1; transform: translateY(0); }
     .toast.error { border-left-color: var(--danger); }
     .hint { font-size: .78rem; color: var(--muted); margin-top: .35rem; }
+
+    /* Publish status pill */
+    .pill { display: none; align-items: center; gap: .45rem; font-size: .8rem; color: var(--muted);
+      background: var(--panel2); border: 1px solid var(--border); border-radius: 999px; padding: .3rem .75rem; }
+    .pill.on { display: inline-flex; }
+    .pill.live { color: var(--theme); border-color: var(--theme); }
+    .pill.fail { color: var(--danger); border-color: var(--danger); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: 0 0 8px; }
+    .pill.busy .dot { animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+    .dirty-dot { display: none; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+    .dirty-dot.on { display: inline-block; }
+
+    /* Modal */
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+      align-items: center; justify-content: center; padding: 1.5rem; }
+    .modal-bg.on { display: flex; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+      padding: 1.5rem; width: 100%; max-width: 560px; max-height: 82vh; display: flex; flex-direction: column; }
+    .modal .body { overflow-y: auto; margin: .75rem 0 1rem; }
+    .modal .actions { display: flex; gap: .5rem; justify-content: flex-end; }
+    .change { padding: .5rem .7rem; background: var(--panel2); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: .4rem; font-size: .85rem; }
+    .change .what { color: var(--muted); font-size: .78rem; margin-top: .15rem; word-break: break-word; }
+    .ver { display: flex; align-items: center; gap: .75rem; padding: .6rem .7rem; background: var(--panel2);
+      border: 1px solid var(--border); border-radius: 8px; margin-bottom: .4rem; }
+    .ver .meta { flex: 1; font-size: .85rem; min-width: 0; }
+    .ver .meta .when { color: var(--muted); font-size: .78rem; }
     details.help { margin-top: 1rem; }
     details.help summary { cursor: pointer; color: var(--theme); }
     code { background: var(--panel2); padding: .1rem .35rem; border-radius: 5px; font-size: .85em; }
@@ -89,7 +121,8 @@
       <h2>Set up this browser</h2>
       <p class="muted">Runs entirely in your browser. Your token is encrypted with your password and stored only on this device. Do this once — afterwards you sign in with just your password.</p>
       <label class="field"><span class="lbl">Choose an admin password</span>
-        <input type="password" id="su_pass" autocomplete="new-password" placeholder="Strong password"></label>
+        <input type="password" id="su_pass" autocomplete="new-password" placeholder="Strong password">
+        <div class="hint">At least 12 characters. There is no reset — store it in your password manager.</div></label>
       <label class="field"><span class="lbl">Confirm password</span>
         <input type="password" id="su_pass2" autocomplete="new-password" placeholder="Repeat password"></label>
       <label class="field"><span class="lbl">GitHub fine-grained token</span>
@@ -107,7 +140,7 @@
         <label class="field"><span class="lbl">Branch</span>
           <input type="text" id="su_branch" value="main"></label>
       </details>
-      <button class="btn" id="su_btn" style="width:100%; margin-top:.5rem">Save &amp; continue</button>
+      <button class="btn" id="su_btn" style="width:100%; margin-top:.5rem">Verify token &amp; continue</button>
       <div class="err" id="su_err"></div>
       <p class="hint" style="margin-top:1rem">Asked to set up on <em>every</em> visit? Firefox is deleting this site's data on exit. Fix it once: <strong>Settings → Privacy &amp; Security → Cookies and Site Data → Manage Exceptions</strong>, add <code>https://essploit.github.io</code>, choose <strong>Allow</strong>, Save.</p>
     </div>
@@ -132,18 +165,45 @@
       <div class="brand">● SITE ADMIN</div>
       <nav id="nav"></nav>
       <div style="margin-top:1rem">
-        <button class="btn-ghost btn-sm" id="logout" style="width:100%">Log out</button>
+        <div class="hint" id="repoInfo" style="margin-bottom:.5rem"></div>
+        <button class="btn-ghost btn-sm" id="history" style="width:100%">Version history</button>
+        <button class="btn-ghost btn-sm" id="logout" style="width:100%; margin-top:.5rem">Lock now</button>
         <button class="btn-danger btn-sm" id="reset" style="width:100%; margin-top:.5rem">Reset / change token</button>
       </div>
     </aside>
     <div class="main">
       <div class="topbar">
         <strong id="sectionTitle">Editing</strong>
+        <span class="dirty-dot" id="dirtyDot" title="Unpublished changes"></span>
         <span class="spacer"></span>
-        <a class="btn-ghost btn-sm" href="../index.html" target="_blank" style="text-decoration:none">View site ↗</a>
-        <button class="btn" id="save">Save changes</button>
+        <span class="pill" id="pill"><span class="dot"></span><span id="pillText"></span></span>
+        <a class="btn-ghost btn-sm" href="../index.html" target="_blank" rel="noopener" style="text-decoration:none">View site ↗</a>
+        <button class="btn" id="save">Review &amp; publish</button>
       </div>
       <div class="content" id="formRoot"></div>
+    </div>
+  </div>
+
+  <!-- REVIEW CHANGES BEFORE PUBLISH -->
+  <div class="modal-bg" id="reviewModal">
+    <div class="modal">
+      <h2>Review changes</h2>
+      <p class="muted" id="reviewSummary"></p>
+      <div class="body" id="reviewBody"></div>
+      <div class="actions">
+        <button class="btn-ghost btn-sm" id="reviewCancel">Cancel</button>
+        <button class="btn" id="reviewGo">Publish to live site</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERSION HISTORY -->
+  <div class="modal-bg" id="histModal">
+    <div class="modal">
+      <h2>Version history</h2>
+      <p class="muted">Load an earlier version of your content into the editor. Nothing goes live until you publish it.</p>
+      <div class="body" id="histBody"></div>
+      <div class="actions"><button class="btn-ghost btn-sm" id="histClose">Close</button></div>
     </div>
   </div>
 

@@ -13,6 +13,16 @@
   var CONTENT_PATH = 'data/content.json';
   var UPLOAD_DIR = 'assets/uploads';
 
+  var PBKDF2_ITERS = 600000;   // OWASP 2023+ for PBKDF2-SHA256; older stores are upgraded on login
+  var LEGACY_ITERS = 210000;   // what stores created before this version used
+  var IDLE_LOCK_MS = 15 * 60 * 1000;
+  var MAX_FAILS = 5;           // wrong passwords before the login is throttled
+  var LOCKOUT_MS = 30 * 1000;  // doubles for every extra failure, capped
+  var MAX_LOCKOUT_MS = 15 * 60 * 1000;
+  var MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+  var LIVE_POLL_MS = 6000;
+  var LIVE_POLL_TRIES = 30;    // ~3 minutes of waiting for Pages to rebuild
+
   // ---------------------------------------------------------
   // Schema: describes every editable field. Field types:
   //   text, textarea, html, number, url, image, bool,
@@ -179,14 +189,18 @@
   // ---------------------------------------------------------
   var state = {
     cfg: null,        // {owner, repo, branch}
-    token: null,      // decrypted GitHub token (memory only)
+    token: null,      // decrypted GitHub token (memory only, never persisted in the clear)
     content: null,    // working copy being edited
-    sha: null,        // sha of content.json on GitHub
-    uploads: {},      // path -> { base64, contentType }
-    activeSection: SCHEMA[0].key
+    original: null,   // pristine copy as loaded, for diffing
+    sha: null,        // blob sha of content.json we based our edits on
+    uploads: {},      // field path -> { repoPath, base64, contentType }
+    activeSection: SCHEMA[0].key,
+    idleTimer: null,
+    publishing: false
   };
 
   var $ = function (id) { return document.getElementById(id); };
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
   function toast(msg, isError) {
     var t = $('toast');
@@ -201,6 +215,25 @@
     $('app').style.display = 'none';
     if (view === 'app') $('app').style.display = 'grid';
     else $(view).style.display = 'flex';
+  }
+
+  function modal(id, on) { $(id).className = 'modal-bg' + (on ? ' on' : ''); }
+
+  // Publish-status pill: kind is 'busy' | 'live' | 'fail' | null (hidden)
+  function status(kind, text) {
+    var p = $('pill');
+    if (!kind) { p.className = 'pill'; return; }
+    p.className = 'pill on ' + kind;
+    $('pillText').textContent = text;
+  }
+
+  function isDirty() {
+    if (!state.original) return false;
+    if (Object.keys(state.uploads).length) return true;
+    return JSON.stringify(state.content) !== JSON.stringify(state.original);
+  }
+  function refreshDirty() {
+    $('dirtyDot').className = 'dirty-dot' + (isDirty() ? ' on' : '');
   }
 
   // ---------------------------------------------------------
@@ -223,11 +256,11 @@
   }
   function utf8ToB64(str) { return b64(enc.encode(str)); }
 
-  function deriveKey(password, salt) {
+  function deriveKey(password, salt, iters) {
     return crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey'])
       .then(function (base) {
         return crypto.subtle.deriveKey(
-          { name: 'PBKDF2', salt: salt, iterations: 210000, hash: 'SHA-256' },
+          { name: 'PBKDF2', salt: salt, iterations: iters || PBKDF2_ITERS, hash: 'SHA-256' },
           base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
       });
   }
@@ -263,6 +296,43 @@
     });
   }
 
+  // Same as gh(), but rejects with GitHub's own error message on failure.
+  function ghJSON(path, opts) {
+    return gh(path, opts).then(function (r) {
+      if (r.ok) return r.status === 204 ? null : r.json();
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        var msg = (j && j.message) || ('HTTP ' + r.status);
+        if (r.status === 401) msg = 'Token rejected (401) — it may have expired. Use "Reset / change token".';
+        if (r.status === 403) msg = 'Token lacks permission (403). It needs Contents: Read and write on this repo.';
+        var e = new Error(msg); e.status = r.status; throw e;
+      });
+    });
+  }
+
+  // Confirms, before we store anything, that the token really can write here.
+  function validateAccess(cfg, token) {
+    var base = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo;
+    var headers = {
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+    return fetch(base, { headers: headers }).then(function (r) {
+      if (r.status === 401) throw new Error('GitHub rejected the token. Check you pasted it whole and it has not expired.');
+      if (r.status === 404) throw new Error('Repo ' + cfg.owner + '/' + cfg.repo + ' not found, or the token has no access to it.');
+      if (!r.ok) throw new Error('GitHub error ' + r.status + ' while checking the repository.');
+      return r.json();
+    }).then(function (repo) {
+      if (!repo.permissions || !repo.permissions.push) {
+        throw new Error('This token can read the repo but not write to it. Give it Contents: Read and write.');
+      }
+      return fetch(base + '/branches/' + encodeURIComponent(cfg.branch), { headers: headers });
+    }).then(function (r) {
+      if (r.status === 404) throw new Error('Branch "' + cfg.branch + '" does not exist in that repository.');
+      if (!r.ok) throw new Error('GitHub error ' + r.status + ' while checking the branch.');
+    });
+  }
+
   function getContentFile() {
     return gh('contents/' + CONTENT_PATH + '?ref=' + encodeURIComponent(state.cfg.branch))
       .then(function (r) {
@@ -272,18 +342,49 @@
       });
   }
 
-  function putFile(path, base64Content, message, sha) {
-    var body = { message: message, content: base64Content, branch: state.cfg.branch };
-    if (sha) body.sha = sha;
-    return gh('contents/' + path, { method: 'PUT', body: body })
-      .then(function (r) {
-        if (!r.ok) {
-          return r.json().catch(function(){return {};}).then(function (j) {
-            throw new Error((j && j.message) || ('PUT ' + path + ' failed (' + r.status + ')'));
-          });
-        }
-        return r.json();
-      });
+  // ---- Atomic publish via the Git Data API -------------------------------
+  // Images and content.json land in ONE commit, so the live site can never be
+  // caught half-updated (content pointing at an image that isn't pushed yet).
+  function publishCommit(files, message) {
+    var ref = 'heads/' + state.cfg.branch;
+    var baseCommitSha, baseTreeSha;
+
+    return ghJSON('git/ref/' + ref).then(function (r) {
+      baseCommitSha = r.object.sha;
+      return ghJSON('git/commits/' + baseCommitSha);
+    }).then(function (c) {
+      baseTreeSha = c.tree.sha;
+      // Upload every file as a blob first; blobs are inert until referenced.
+      return files.reduce(function (chain, f) {
+        return chain.then(function (acc) {
+          return ghJSON('git/blobs', { method: 'POST', body: { content: f.base64, encoding: 'base64' } })
+            .then(function (b) { acc.push({ path: f.path, mode: '100644', type: 'blob', sha: b.sha }); return acc; });
+        });
+      }, Promise.resolve([]));
+    }).then(function (tree) {
+      return ghJSON('git/trees', { method: 'POST', body: { base_tree: baseTreeSha, tree: tree } });
+    }).then(function (t) {
+      return ghJSON('git/commits', { method: 'POST', body: { message: message, tree: t.sha, parents: [baseCommitSha] } });
+    }).then(function (commit) {
+      // force:false — if someone else pushed meanwhile, this fails instead of
+      // silently discarding their commit.
+      return ghJSON('git/refs/' + ref, { method: 'PATCH', body: { sha: commit.sha, force: false } })
+        .then(function () { return commit; })
+        .catch(function (e) {
+          throw new Error('Could not update the branch — the repo changed while you were editing. ' +
+            'Reload the editor and redo your edits. (' + e.message + ')');
+        });
+    });
+  }
+
+  function listVersions() {
+    return ghJSON('commits?path=' + encodeURIComponent(CONTENT_PATH) +
+      '&sha=' + encodeURIComponent(state.cfg.branch) + '&per_page=15');
+  }
+
+  function getContentAt(commitSha) {
+    return ghJSON('contents/' + CONTENT_PATH + '?ref=' + encodeURIComponent(commitSha))
+      .then(function (f) { return JSON.parse(dec.decode(unb64(f.content.replace(/\n/g, '')))); });
   }
 
   // ---------------------------------------------------------
@@ -300,6 +401,7 @@
       return acc[k];
     }, state.content);
     obj[last] = value;
+    refreshDirty();
   }
 
   // ---------------------------------------------------------
@@ -390,6 +492,13 @@
     file.addEventListener('change', function () {
       var f = file.files && file.files[0];
       if (!f) return;
+      if (!/^image\//.test(f.type)) {
+        toast('That is not an image file.', true); file.value = ''; return;
+      }
+      if (f.size > MAX_UPLOAD_BYTES) {
+        toast('Image is ' + (f.size / 1048576).toFixed(1) + ' MB — the limit is 5 MB. Resize it first.', true);
+        file.value = ''; return;
+      }
       var reader = new FileReader();
       reader.onload = function () {
         var dataUrl = reader.result;
@@ -442,7 +551,7 @@
     var addBtn = el('button', { class: 'btn-ghost btn-sm' }, ['+ Add ' + (field.itemLabel || 'item')]);
     addBtn.addEventListener('click', function () {
       arr.push(field.itemType === 'string' ? '' : blankItem(field.fields));
-      redraw();
+      redraw(); refreshDirty();
     });
     box.appendChild(addBtn);
     redraw();
@@ -457,9 +566,12 @@
     var up = el('button', { class: 'btn-ghost btn-sm', title: 'Move up' }, ['↑']);
     var down = el('button', { class: 'btn-ghost btn-sm', title: 'Move down' }, ['↓']);
     var del = el('button', { class: 'btn-danger btn-sm', title: 'Remove' }, ['Delete']);
-    up.addEventListener('click', function () { if (idx > 0) { swap(arr, idx, idx - 1); redraw(); } });
-    down.addEventListener('click', function () { if (idx < arr.length - 1) { swap(arr, idx, idx + 1); redraw(); } });
-    del.addEventListener('click', function () { arr.splice(idx, 1); redraw(); });
+    up.addEventListener('click', function () { if (idx > 0) { swap(arr, idx, idx - 1); redraw(); refreshDirty(); } });
+    down.addEventListener('click', function () { if (idx < arr.length - 1) { swap(arr, idx, idx + 1); redraw(); refreshDirty(); } });
+    del.addEventListener('click', function () {
+      if (!confirm('Delete this ' + (field.itemLabel || 'item').toLowerCase() + '? It disappears from the live site when you publish.')) return;
+      arr.splice(idx, 1); redraw(); refreshDirty();
+    });
     head.appendChild(up); head.appendChild(down); head.appendChild(del);
     item.appendChild(head);
 
@@ -523,8 +635,12 @@
 
   function startApp() {
     show('app');
+    $('repoInfo').textContent = state.cfg.owner + '/' + state.cfg.repo + ' · ' + state.cfg.branch;
     buildNav();
     renderSection();
+    refreshDirty();
+    status(null);
+    touchIdle();
   }
 
   // ---------------------------------------------------------
@@ -541,44 +657,219 @@
         state.sha = null;
         state.content = {};
       }
+      state.original = clone(state.content);
     }).catch(function (err) {
       // Fall back to the published file so the editor still opens.
       return fetch('../' + CONTENT_PATH + '?v=' + Date.now(), { cache: 'no-store' })
         .then(function (r) { return r.json(); })
-        .then(function (data) { state.content = data; state.sha = null;
-          toast('Loaded local copy (could not reach GitHub: ' + err.message + ')', true); });
+        .then(function (data) {
+          state.content = data; state.original = clone(data); state.sha = null;
+          toast('Loaded local copy (could not reach GitHub: ' + err.message + ')', true);
+        });
     });
   }
 
   // ---------------------------------------------------------
   // Save: commit images, then content.json
   // ---------------------------------------------------------
-  function save() {
-    var btn = $('save');
-    btn.disabled = true; btn.textContent = 'Saving…';
+  // Human-readable list of what changed, so nothing goes live unreviewed.
+  function labelFor(topKey) {
+    var s = SCHEMA.filter(function (x) { return x.key === topKey; })[0];
+    return s ? s.label : topKey;
+  }
 
-    var uploadPaths = Object.keys(state.uploads);
-    var chain = Promise.resolve();
+  function describe(v) {
+    if (v === undefined) return '(empty)';
+    if (v === null) return 'nothing';
+    if (Array.isArray(v)) return v.length + ' item' + (v.length === 1 ? '' : 's');
+    if (typeof v === 'object') return 'a group of settings';
+    var s = String(v);
+    if (s === '') return '(empty)';
+    return s.length > 70 ? '"' + s.slice(0, 70) + '…"' : '"' + s + '"';
+  }
 
-    uploadPaths.forEach(function (fieldPath) {
-      var up = state.uploads[fieldPath];
-      chain = chain.then(function () {
-        return putFile(up.repoPath, up.base64, 'admin: upload image ' + up.repoPath);
-      });
+  function diff(a, b, path, out) {
+    var isObj = function (x) { return x && typeof x === 'object' && !Array.isArray(x); };
+    if (isObj(a) && isObj(b)) {
+      var keys = Object.keys(a).concat(Object.keys(b)).filter(function (k, i, arr) { return arr.indexOf(k) === i; });
+      keys.forEach(function (k) { diff(a[k], b[k], path.concat(k), out); });
+      return out;
+    }
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) {
+        out.push({ path: path, what: a.length + ' → ' + b.length + ' items' });
+      }
+      for (var i = 0; i < Math.max(a.length, b.length); i++) diff(a[i], b[i], path.concat(String(i + 1)), out);
+      return out;
+    }
+    if (JSON.stringify(a) !== JSON.stringify(b)) {
+      out.push({ path: path, what: describe(a) + '  →  ' + describe(b) });
+    }
+    return out;
+  }
+
+  function changeList() {
+    var raw = diff(state.original || {}, state.content || {}, [], []);
+    // Collapse to a readable "Section › field › 2" trail.
+    return raw.map(function (c) {
+      var trail = c.path.slice();
+      if (trail.length) trail[0] = labelFor(trail[0]);
+      return { label: trail.join(' › ') || 'content', what: c.what };
     });
+  }
 
-    chain.then(function () {
-      var json = JSON.stringify(state.content, null, 2) + '\n';
-      return putFile(CONTENT_PATH, utf8ToB64(json), 'admin: update site content', state.sha);
-    }).then(function (res) {
-      state.sha = res.content.sha;
+  function openReview() {
+    if (state.publishing) return;
+    var changes = changeList();
+    var uploads = Object.keys(state.uploads).map(function (k) { return state.uploads[k].repoPath; });
+    var body = $('reviewBody');
+    body.innerHTML = '';
+
+    if (!changes.length && !uploads.length) {
+      $('reviewSummary').textContent = 'Nothing has changed since you loaded the editor.';
+      $('reviewGo').disabled = true;
+    } else {
+      $('reviewSummary').textContent = changes.length + ' change' + (changes.length === 1 ? '' : 's') +
+        (uploads.length ? ' and ' + uploads.length + ' new image' + (uploads.length === 1 ? '' : 's') : '') +
+        ' will go live on your site.';
+      $('reviewGo').disabled = false;
+      changes.slice(0, 200).forEach(function (c) {
+        body.appendChild(el('div', { class: 'change' }, [
+          el('strong', {}, [c.label]), el('div', { class: 'what' }, [c.what])
+        ]));
+      });
+      uploads.forEach(function (p) {
+        body.appendChild(el('div', { class: 'change' }, [
+          el('strong', {}, ['New image']), el('div', { class: 'what' }, [p])
+        ]));
+      });
+    }
+    modal('reviewModal', true);
+  }
+
+  function publish() {
+    modal('reviewModal', false);
+    var btn = $('save');
+    state.publishing = true;
+    btn.disabled = true; btn.textContent = 'Publishing…';
+    status('busy', 'Committing…');
+
+    // Stamp the revision so we can tell when the live site has caught up.
+    var rev = new Date().toISOString();
+    state.content._rev = rev;
+
+    var files = Object.keys(state.uploads).map(function (k) {
+      return { path: state.uploads[k].repoPath, base64: state.uploads[k].base64 };
+    });
+    files.push({ path: CONTENT_PATH, base64: utf8ToB64(JSON.stringify(state.content, null, 2) + '\n') });
+
+    var msg = 'admin: update site content' + (files.length > 1 ? ' (+' + (files.length - 1) + ' image)' : '');
+
+    // Someone editing from another device would silently lose their work, so
+    // check content.json hasn't moved under us before writing.
+    getContentFile().then(function (file) {
+      if (state.sha && file && file.sha !== state.sha) {
+        throw new Error('The site content was changed somewhere else since you opened the editor. ' +
+          'Reload this page to get the latest version before publishing.');
+      }
+      return publishCommit(files, msg);
+    }).then(function () {
       state.uploads = {};
-      btn.disabled = false; btn.textContent = 'Save changes';
-      toast('Saved! GitHub Pages will rebuild in ~1 minute.');
+      state.original = clone(state.content);
+      refreshDirty();
+      btn.disabled = false; btn.textContent = 'Review & publish';
       renderSection();
+      return getContentFile().then(function (f) { if (f) state.sha = f.sha; });
+    }).then(function () {
+      return waitForLive(rev);
     }).catch(function (err) {
-      btn.disabled = false; btn.textContent = 'Save changes';
-      toast('Save failed: ' + err.message, true);
+      status('fail', 'Publish failed');
+      btn.disabled = false; btn.textContent = 'Review & publish';
+      toast('Publish failed: ' + err.message, true);
+    }).then(function () { state.publishing = false; });
+  }
+
+  // Poll the real published file until GitHub Pages serves the new revision.
+  function waitForLive(rev) {
+    // On localhost "../data/content.json" is the local file, not the deployed
+    // one, so there is nothing meaningful to wait for.
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:') {
+      status('live', 'Committed to GitHub');
+      toast('Committed. GitHub Pages will rebuild in about a minute.');
+      return Promise.resolve();
+    }
+    status('busy', 'Waiting for the site to rebuild…');
+    var tries = 0;
+    return new Promise(function (resolve) {
+      (function poll() {
+        fetch('../' + CONTENT_PATH + '?v=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.json(); })
+          .then(function (live) {
+            if (live && live._rev === rev) {
+              status('live', 'Live on your site ✓');
+              toast('Published — your changes are live.');
+              return resolve();
+            }
+            next();
+          })
+          .catch(next);
+        function next() {
+          if (++tries >= LIVE_POLL_TRIES) {
+            status('live', 'Committed — rebuild pending');
+            toast('Saved to GitHub. The live site is taking longer than usual to rebuild; check again shortly.');
+            return resolve();
+          }
+          setTimeout(poll, LIVE_POLL_MS);
+        }
+      })();
+    });
+  }
+
+  // ---------------------------------------------------------
+  // Version history / rollback
+  // ---------------------------------------------------------
+  function openHistory() {
+    var body = $('histBody');
+    body.innerHTML = '';
+    body.appendChild(el('p', { class: 'muted' }, ['Loading…']));
+    modal('histModal', true);
+
+    listVersions().then(function (commits) {
+      body.innerHTML = '';
+      if (!commits || !commits.length) {
+        body.appendChild(el('p', { class: 'muted' }, ['No history yet.']));
+        return;
+      }
+      commits.forEach(function (c, i) {
+        var when = new Date(c.commit.author.date).toLocaleString();
+        var row = el('div', { class: 'ver' });
+        row.appendChild(el('div', { class: 'meta' }, [
+          el('div', {}, [c.commit.message.split('\n')[0]]),
+          el('div', { class: 'when' }, [when + (i === 0 ? ' — current' : '')])
+        ]));
+        if (i > 0) {
+          var btn = el('button', { class: 'btn-ghost btn-sm' }, ['Load']);
+          btn.addEventListener('click', function () {
+            if (isDirty() && !confirm('You have unpublished changes that will be discarded. Continue?')) return;
+            btn.disabled = true; btn.textContent = 'Loading…';
+            getContentAt(c.sha).then(function (data) {
+              state.content = data;
+              modal('histModal', false);
+              renderSection();
+              refreshDirty();
+              toast('Loaded the version from ' + when + '. Review it, then publish to make it live.');
+            }).catch(function (e) {
+              btn.disabled = false; btn.textContent = 'Load';
+              toast('Could not load that version: ' + e.message, true);
+            });
+          });
+          row.appendChild(btn);
+        }
+        body.appendChild(row);
+      });
+    }).catch(function (e) {
+      body.innerHTML = '';
+      body.appendChild(el('p', { class: 'err' }, ['Could not load history: ' + e.message]));
     });
   }
 
@@ -586,23 +877,42 @@
   // Auth flows
   // ---------------------------------------------------------
   function doSetup() {
+    var btn = $('su_btn');
     var p1 = $('su_pass').value, p2 = $('su_pass2').value;
     var owner = $('su_owner').value.trim(), repo = $('su_repo').value.trim();
     var branch = $('su_branch').value.trim() || 'main', token = $('su_token').value.trim();
     var err = $('su_err'); err.textContent = '';
-    if (p1.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
+    if (p1.length < 12) { err.textContent = 'Password must be at least 12 characters.'; return; }
     if (p1 !== p2) { err.textContent = 'Passwords do not match.'; return; }
     if (!owner || !repo || !token) { err.textContent = 'Owner, repo and token are required.'; return; }
 
-    var salt = crypto.getRandomValues(new Uint8Array(16));
-    deriveKey(p1, salt).then(function (key) {
-      return Promise.all([ encryptStr(key, 'CMS_OK'), encryptStr(key, token) ]).then(function (res) {
-        saveStore({ salt: b64(salt), verify: res[0], token: res[1], owner: owner, repo: repo, branch: branch });
-        state.cfg = { owner: owner, repo: repo, branch: branch };
-        state.token = token;
-        return loadContent().then(startApp);
+    var cfg = { owner: owner, repo: repo, branch: branch };
+    btn.disabled = true; btn.textContent = 'Checking token…';
+
+    // Verify the token works *before* saving it, so a typo fails here rather
+    // than at the first publish.
+    validateAccess(cfg, token).then(function () {
+      btn.textContent = 'Encrypting…';
+      var salt = crypto.getRandomValues(new Uint8Array(16));
+      return deriveKey(p1, salt, PBKDF2_ITERS).then(function (key) {
+        return Promise.all([ encryptStr(key, 'CMS_OK'), encryptStr(key, token) ]).then(function (res) {
+          saveStore({ salt: b64(salt), iters: PBKDF2_ITERS, verify: res[0], token: res[1],
+            owner: owner, repo: repo, branch: branch, fails: 0 });
+          state.cfg = cfg;
+          state.token = token;
+          $('su_pass').value = $('su_pass2').value = $('su_token').value = '';
+          return loadContent().then(startApp);
+        });
       });
-    }).catch(function (e) { err.textContent = 'Setup failed: ' + e.message; });
+    }).catch(function (e) {
+      err.textContent = e.message;
+    }).then(function () {
+      btn.disabled = false; btn.textContent = 'Verify token & continue';
+    });
+  }
+
+  function lockoutLeft(store) {
+    return store && store.lockUntil ? store.lockUntil - Date.now() : 0;
   }
 
   function doLogin() {
@@ -610,22 +920,101 @@
     var pass = $('li_pass').value;
     var err = $('li_err'); err.textContent = '';
     if (!store) { show('setup'); return; }
-    deriveKey(pass, unb64(store.salt)).then(function (key) {
+
+    var wait = lockoutLeft(store);
+    if (wait > 0) {
+      err.textContent = 'Too many wrong attempts. Try again in ' + Math.ceil(wait / 1000) + 's.';
+      return;
+    }
+
+    var btn = $('li_btn');
+    btn.disabled = true; btn.textContent = 'Unlocking…';
+    var iters = store.iters || LEGACY_ITERS;
+
+    // Only decryption failure means "wrong password" — anything that goes
+    // wrong afterwards (network, GitHub) must not burn a login attempt.
+    var unwrap = deriveKey(pass, unb64(store.salt), iters).then(function (key) {
       return decryptStr(key, store.verify).then(function (v) {
         if (v !== 'CMS_OK') throw new Error('bad');
         return decryptStr(key, store.token);
-      }).then(function (token) {
-        state.cfg = { owner: store.owner, repo: store.repo, branch: store.branch };
-        state.token = token;
-        return loadContent().then(startApp);
       });
-    }).catch(function () { err.textContent = 'Incorrect password.'; });
+    });
+
+    unwrap.catch(function () {
+      var s = loadStore() || store;
+      s.fails = (s.fails || 0) + 1;
+      if (s.fails >= MAX_FAILS) {
+        var pow = Math.min(s.fails - MAX_FAILS, 6);
+        var delay = Math.min(LOCKOUT_MS * Math.pow(2, pow), MAX_LOCKOUT_MS);
+        s.lockUntil = Date.now() + delay;
+        err.textContent = 'Incorrect password. Locked for ' + Math.ceil(delay / 1000) + 's.';
+      } else {
+        err.textContent = 'Incorrect password. ' + (MAX_FAILS - s.fails) + ' attempts left before a lockout.';
+      }
+      saveStore(s);
+    });
+
+    unwrap.then(function (token) {
+      store.fails = 0; delete store.lockUntil; saveStore(store);
+      state.cfg = { owner: store.owner, repo: store.repo, branch: store.branch };
+      state.token = token;
+      $('li_pass').value = '';
+      // Old stores used weaker key stretching — silently re-wrap at the
+      // current strength now that we know the password is right.
+      if (iters < PBKDF2_ITERS) upgradeStore(pass, token, store);
+      return loadContent().then(startApp).catch(function (e) {
+        err.textContent = 'Signed in, but the editor could not load: ' + e.message;
+        show('login');
+      });
+    }).catch(function () { /* already reported above */ })
+      .then(function () { btn.disabled = false; btn.textContent = 'Unlock'; });
+  }
+
+  function upgradeStore(pass, token, store) {
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    deriveKey(pass, salt, PBKDF2_ITERS).then(function (key) {
+      return Promise.all([ encryptStr(key, 'CMS_OK'), encryptStr(key, token) ]).then(function (res) {
+        store.salt = b64(salt); store.iters = PBKDF2_ITERS;
+        store.verify = res[0]; store.token = res[1];
+        saveStore(store);
+      });
+    }).catch(function () { /* keep the working store if the upgrade fails */ });
+  }
+
+  // ---------------------------------------------------------
+  // Auto-lock: drop the token from memory after inactivity
+  // ---------------------------------------------------------
+  function lock(reason) {
+    state.token = null; state.content = null; state.original = null; state.uploads = {};
+    clearTimeout(state.idleTimer);
+    modal('reviewModal', false); modal('histModal', false);
+    status(null);
+    $('li_pass').value = '';
+    show('login');
+    if (reason) $('li_err').textContent = reason;
+  }
+
+  function touchIdle() {
+    if (!state.token) return;
+    clearTimeout(state.idleTimer);
+    state.idleTimer = setTimeout(function () {
+      if (state.publishing) { touchIdle(); return; }   // never interrupt a publish
+      lock('Locked automatically after 15 minutes of inactivity.');
+    }, IDLE_LOCK_MS);
   }
 
   // ---------------------------------------------------------
   // Wire up
   // ---------------------------------------------------------
   function init() {
+    // Never allow the editor to be framed — a hidden iframe could bait clicks
+    // onto the publish button.
+    if (window.top !== window.self) {
+      document.body.innerHTML = '<div class="center"><div class="card"><h2>Blocked</h2>' +
+        '<p class="muted">The admin cannot be opened inside a frame.</p></div></div>';
+      return;
+    }
+
     if (!window.crypto || !crypto.subtle) {
       document.body.innerHTML = '<div class="center"><div class="card"><h2>Unsupported</h2>' +
         '<p class="muted">This admin needs a modern browser over HTTPS (or localhost).</p></div></div>';
@@ -643,16 +1032,41 @@
     $('li_btn').addEventListener('click', doLogin);
     $('li_pass').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
     $('reset').addEventListener('click', function () {
-      if (!confirm('Reset this browser? This removes the saved login and encrypted token from THIS device only. You will need your GitHub token to set up again.')) return;
-      state.token = null; state.content = null;
+      if (!confirm('Reset this browser? This removes the saved login and encrypted token from THIS device only. Your live site is untouched. You will need your GitHub token to set up again.')) return;
       localStorage.removeItem(LS_KEY);
+      lock();
       toast('Local data cleared.');
       show('setup');
     });
     $('logout').addEventListener('click', function () {
-      state.token = null; state.content = null; $('li_pass').value = ''; show('login');
+      if (isDirty() && !confirm('You have unpublished changes. Lock anyway and lose them?')) return;
+      lock();
     });
-    $('save').addEventListener('click', save);
+    $('save').addEventListener('click', openReview);
+    $('reviewCancel').addEventListener('click', function () { modal('reviewModal', false); });
+    $('reviewGo').addEventListener('click', publish);
+    $('history').addEventListener('click', openHistory);
+    $('histClose').addEventListener('click', function () { modal('histModal', false); });
+
+    // Click the dimmed backdrop or press Escape to dismiss a modal.
+    ['reviewModal', 'histModal'].forEach(function (id) {
+      $(id).addEventListener('click', function (e) { if (e.target === $(id)) modal(id, false); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { modal('reviewModal', false); modal('histModal', false); }
+    });
+
+    // Reset the auto-lock countdown on any real interaction.
+    ['mousedown', 'keydown', 'touchstart', 'focus'].forEach(function (ev) {
+      document.addEventListener(ev, touchIdle, true);
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+      if (!isDirty()) return;
+      e.preventDefault();
+      e.returnValue = '';   // browsers show their own "leave site?" prompt
+      return '';
+    });
 
     show(loadStore() ? 'login' : 'setup');
   }
