@@ -28,16 +28,16 @@
       {
         "name": "Networking",
         "percent": 70,
-        "label": "80%"
+        "label": "70%"
       },
       {
         "name": "Ai/Ml",
-        "percent": 50,
+        "percent": 80,
         "label": "80%"
       },
       {
         "name": "Linux",
-        "percent": 50,
+        "percent": 90,
         "label": "90%"
       }
     ]
@@ -137,23 +137,23 @@
     "subtitle": "",
     "items": [
       {
-        "name": "Figma",
-        "img": "assets/img/skill/react.svg",
-        "percent": 50
+        "name": "Networking",
+        "img": "assets/uploads/1785194937935-networking-connector-svgrepo-com.svg",
+        "percent": 70
       },
       {
-        "name": "Django",
-        "img": "assets/img/skill/django.svg",
+        "name": "Automation",
+        "img": "assets/uploads/1785194951908-automation-svgrepo-com.svg",
         "percent": 50
       },
       {
         "name": "Cybersecurity",
-        "img": "assets/uploads/1785192914271-Screenshot_2026-07-28_00-55-05.png",
+        "img": "assets/uploads/1785194961641-bug-shield-svgrepo-com.svg",
         "percent": 60
       },
       {
         "name": "AI",
-        "img": "assets/uploads/1785192716704-Screenshot_2026-07-28_00-51-31.png",
+        "img": "assets/uploads/1785194966751-cloud-computing-ai-svgrepo-com.svg",
         "percent": 80
       },
       {
@@ -177,9 +177,9 @@
       "items": [
         {
           "company": "Setup SH.P.K",
-          "period": "June, 2024 - Current",
+          "period": "June, 2024 - June 2026",
           "role": "IT Technican & Support",
-          "desc": "SETUP IT Solutions — [Tirana/Albania]\nJune 2024 – Present\n\nProvided day-to-day technical support to internal staff, ensuring smooth IT operations across the company.\n\nConfigured and deployed PCs within a Windows Domain environment, maintaining proper group policies and user permissions.\n\nManaged user accounts in Windows Server, including creation, deletion, and access rights adjustments using Active Directory.\n\nInstalled, configured, and maintained network devices including routers and switches, ensuring secure and reliable network connectivity.\n\nPerformed system formatting and OS installation, including driver and essential software setup for end-users.\n\nDiagnosed and resolved hardware, software, and networking issues across the organization.\n\nMaintained IT documentation and supported onboarding/offboarding procedures from an IT infrastructure standpoint."
+          "desc": "SETUP IT Solutions — [Tirana/Albania]\nJune 2024 – June 2026\n\nProvided day-to-day technical support to internal staff, ensuring smooth IT operations across the company.\n\nConfigured and deployed PCs within a Windows Domain environment, maintaining proper group policies and user permissions.\n\nManaged user accounts in Windows Server, including creation, deletion, and access rights adjustments using Active Directory.\n\nInstalled, configured, and maintained network devices including routers and switches, ensuring secure and reliable network connectivity.\n\nPerformed system formatting and OS installation, including driver and essential software setup for end-users.\n\nDiagnosed and resolved hardware, software, and networking issues across the organization.\n\nMaintained IT documentation and supported onboarding/offboarding procedures from an IT infrastructure standpoint."
         }
       ]
     },
@@ -280,7 +280,7 @@
   },
   "footer": {
     "prefix": "Copyright by",
-    "name": "Erik Allmuca 2025 ©"
+    "name": "Erik Allmuca 2026©"
   },
-  "_rev": "2026-07-27T22:55:45.237Z"
+  "_rev": "2026-07-27T23:31:19.442Z"
 }
