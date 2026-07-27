@@ -9,16 +9,37 @@
     "name": "Erik Allmuca",
     "mobileBrand": "Personal Resume",
     "photo": "assets/img/user-sidebar.png",
-    "roles": ["Cybersecurity", "Development", "Networking"],
+    "roles": [
+      "Cybersecurity",
+      "Development",
+      "Networking",
+      "IT"
+    ],
     "residence": "Albania",
     "city": "Tirana",
     "age": "19",
     "cvFile": "mycv.pdf",
     "sidebarSkills": [
-      { "name": "Cybersecurity", "percent": 60, "label": "60%" },
-      { "name": "Networking", "percent": 70, "label": "80%" },
-      { "name": "Ai/Ml", "percent": 50, "label": "70%" },
-      { "name": "Linux", "percent": 50, "label": "90%" }
+      {
+        "name": "Cybersecurity",
+        "percent": 60,
+        "label": "60%"
+      },
+      {
+        "name": "Networking",
+        "percent": 70,
+        "label": "80%"
+      },
+      {
+        "name": "Ai/Ml",
+        "percent": 50,
+        "label": "80%"
+      },
+      {
+        "name": "Linux",
+        "percent": 50,
+        "label": "90%"
+      }
     ]
   },
   "social": {
@@ -37,16 +58,44 @@
     "titleHighlight": "Me",
     "bio": "Hi, my name is <span class=\"text-black dark:text-white\">Erik Allmuca</span> I began my journey in cybersecurity over 3.5 years ago and have since dedicated myself to protecting digital systems, analyzing vulnerabilities, and strengthening network defenses. With a strong focus on ethical hacking, system hardening, and proactive threat mitigation, I go beyond conventional security practices — delivering tailored, high-impact solutions. <span class=\"text-black dark:text-white\">Cybersecurity</span> isn't just my field — it's my passion and mission.",
     "details": [
-      { "label": "Phone", "value": "+(355) 068 261 5998" },
-      { "label": "Email", "value": "allmucaerik1@gmail.com" },
-      { "label": "Github", "value": "github.com/Essploit" },
-      { "label": "Language", "value": "English, Albanian" }
+      {
+        "label": "Phone",
+        "value": "+(355) 068 261 5998"
+      },
+      {
+        "label": "Email",
+        "value": "allmucaerik1@gmail.com"
+      },
+      {
+        "label": "Github",
+        "value": "github.com/Essploit"
+      },
+      {
+        "label": "Language",
+        "value": "English, Albanian"
+      }
     ],
     "counters": [
-      { "number": "2", "suffix": "+", "label": "Years Of Experience" },
-      { "number": "5", "suffix": "+", "label": "Handled Projects" },
-      { "number": "10", "suffix": "+", "label": "Open Source Libraries" },
-      { "number": "23", "suffix": "", "label": "Certificates" }
+      {
+        "number": "2",
+        "suffix": "+",
+        "label": "Years Of Experience"
+      },
+      {
+        "number": "5",
+        "suffix": "+",
+        "label": "Handled Projects"
+      },
+      {
+        "number": "10",
+        "suffix": "+",
+        "label": "Open Source Libraries"
+      },
+      {
+        "number": "23",
+        "suffix": "",
+        "label": "Certificates"
+      }
     ]
   },
   "services": {
@@ -55,10 +104,30 @@
     "titleHighlight": "Services",
     "subtitle": "With over 3.5 years of hands-on experience, I offer a unique blend of cybersecurity expertise and full-stack development to help individuals, startups, and organizations build secure and scalable digital solutions.",
     "items": [
-      { "number": "01", "icon": "web", "title": "Web Development", "desc": "I build secure, scalable web apps using Python, Django, and React — designed to perform and last." },
-      { "number": "02", "icon": "shield", "title": "Cybersecurity", "desc": "I protect systems from real-world threats with ethical hacking, secure architecture, and proactive defense." },
-      { "number": "03", "icon": "gear", "title": "Security-Focused Development", "desc": "Code isn’t just functional — I write it with security baked in, from APIs to user authentication." },
-      { "number": "04", "icon": "strategy", "title": "Technical Strategy", "desc": "I design products that are more than pretty. I make them shippable." }
+      {
+        "number": "01",
+        "icon": "web",
+        "title": "Web Development",
+        "desc": "I build secure, scalable web apps using Python, Django, and React — designed to perform and last."
+      },
+      {
+        "number": "02",
+        "icon": "shield",
+        "title": "Cybersecurity",
+        "desc": "I protect systems from real-world threats with ethical hacking, secure architecture, and proactive defense."
+      },
+      {
+        "number": "03",
+        "icon": "gear",
+        "title": "Security-Focused Development",
+        "desc": "Code isn’t just functional — I write it with security baked in, from APIs to user authentication."
+      },
+      {
+        "number": "04",
+        "icon": "strategy",
+        "title": "Technical Strategy",
+        "desc": "I design products that are more than pretty. I make them shippable."
+      }
     ]
   },
   "skills": {
@@ -67,13 +136,36 @@
     "titleHighlight": "Advantages",
     "subtitle": "",
     "items": [
-      { "name": "Figma", "img": "assets/img/skill/react.svg", "percent": 50 },
-      { "name": "Django", "img": "assets/img/skill/django.svg", "percent": 50 },
-      { "name": "Cybersecurity", "img": "assets/img/skill/cybersecurity.svg", "percent": 60 },
-      { "name": "HTML5", "img": "assets/img/skill/html.svg", "percent": 75 },
-      { "name": "CSS3", "img": "assets/img/skill/css.svg", "percent": 95 },
-      { "name": "Linux", "img": "assets/img/skill/linux.svg", "percent": 95 },
-      { "name": "Microsoft", "img": "assets/img/skill/microsoft.svg", "percent": 70 }
+      {
+        "name": "Figma",
+        "img": "assets/img/skill/react.svg",
+        "percent": 50
+      },
+      {
+        "name": "Django",
+        "img": "assets/img/skill/django.svg",
+        "percent": 50
+      },
+      {
+        "name": "Cybersecurity",
+        "img": "assets/uploads/1785192914271-Screenshot_2026-07-28_00-55-05.png",
+        "percent": 60
+      },
+      {
+        "name": "AI",
+        "img": "assets/uploads/1785192716704-Screenshot_2026-07-28_00-51-31.png",
+        "percent": 80
+      },
+      {
+        "name": "Linux",
+        "img": "assets/img/skill/linux.svg",
+        "percent": 95
+      },
+      {
+        "name": "Microsoft AD/DC",
+        "img": "assets/img/skill/microsoft.svg",
+        "percent": 70
+      }
     ]
   },
   "resume": {
@@ -96,7 +188,12 @@
       "titleHighlight": "Education",
       "subtitle": "My education is still in progress. I am atending High School at the moment",
       "items": [
-        { "school": "University", "period": "In Progress ...", "degree": "", "desc": "" }
+        {
+          "school": "University",
+          "period": "In Progress ...",
+          "degree": "",
+          "desc": ""
+        }
       ]
     }
   },
@@ -105,7 +202,10 @@
     "titleNormal": "Featured",
     "titleHighlight": "Projects",
     "subtitle": "This is my portfolio where all my project will be revealed.",
-    "moreButton": { "text": "Coming soon...", "href": "#" },
+    "moreButton": {
+      "text": "Coming soon...",
+      "href": "#"
+    },
     "items": [
       {
         "title": "Finny",
@@ -130,7 +230,10 @@
     "titleNormal": "My",
     "titleHighlight": "Certificates",
     "subtitle": "These are my certificates that i have been awarded over the years.",
-    "moreButton": { "text": "All Certificates", "href": "all-blogs.html" },
+    "moreButton": {
+      "text": "All Certificates",
+      "href": "all-blogs.html"
+    },
     "items": [
       {
         "image": "assets/img/blog/article1.png",
@@ -178,5 +281,6 @@
   "footer": {
     "prefix": "Copyright by",
     "name": "Erik Allmuca 2025 ©"
-  }
+  },
+  "_rev": "2026-07-27T22:55:45.237Z"
 }
