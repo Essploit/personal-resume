@@ -70,6 +70,12 @@
     .img-field .preview { width: 90px; height: 90px; flex: 0 0 90px; border: 1px solid var(--border); border-radius: 10px;
       object-fit: cover; background: var(--bg); }
     .img-field .img-controls { flex: 1; }
+    .file-field { display: flex; gap: 1rem; align-items: flex-start; }
+    .file-current { display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; margin-bottom: .45rem; }
+    .file-current .file-name { font-weight: 600; word-break: break-all; }
+    .file-current a.file-name { color: var(--theme); }
+    .file-current .muted { font-size: .78rem; color: var(--muted); }
+    .file-current .pending { font-size: .78rem; color: var(--theme); }
     .row { display: flex; gap: .5rem; align-items: center; }
     .switch { display: inline-flex; align-items: center; gap: .5rem; }
     .switch input { width: auto; }

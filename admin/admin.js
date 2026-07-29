@@ -39,7 +39,8 @@
       { key: 'name', label: 'Full name', type: 'text' },
       { key: 'mobileBrand', label: 'Mobile header text', type: 'text' },
       { key: 'photo', label: 'Profile photo', type: 'image' },
-      { key: 'cvFile', label: 'CV file (path or URL)', type: 'text' },
+      { key: 'cvFile', label: 'CV / résumé (PDF)', type: 'file',
+        accept: 'application/pdf', extensions: ['.pdf'], maxBytes: 10 * 1024 * 1024 },
       { key: 'residence', label: 'Residence', type: 'text' },
       { key: 'city', label: 'City', type: 'text' },
       { key: 'age', label: 'Age', type: 'text' },
@@ -431,6 +432,8 @@
 
     if (field.type === 'image') return renderImage(field, path, value);
 
+    if (field.type === 'file') return renderFile(field, path, value);
+
     // Simple fields
     var wrap = el('label', { class: 'field' }, [ el('span', { class: 'lbl' }, [field.label]) ]);
     var input;
@@ -524,6 +527,105 @@
     return wrap;
   }
 
+  // Documents (the CV) ride the same pipeline as images: queued in
+  // state.uploads, then committed atomically with content.json on publish.
+  // Kept separate from renderImage because there is nothing to preview and
+  // the accepted types differ.
+  function renderFile(field, path, value) {
+    var wrap = el('label', { class: 'field' }, [ el('span', { class: 'lbl' }, [field.label]) ]);
+    var row = el('div', { class: 'file-field' });
+    var maxBytes = field.maxBytes || MAX_UPLOAD_BYTES;
+    var exts = field.extensions || [];
+
+    var current = el('div', { class: 'file-current' });
+
+    function showCurrent(v, pending) {
+      current.innerHTML = '';
+      if (!v) {
+        current.appendChild(el('span', { class: 'muted' }, ['No file set']));
+        return;
+      }
+      var name = String(v).split('/').pop();
+      if (pending) {
+        // Not on the site yet, so a link would 404 until they publish.
+        current.appendChild(el('span', { class: 'file-name' }, [name]));
+        current.appendChild(el('span', { class: 'pending' }, ['queued — publish to go live']));
+        return;
+      }
+      var href = /^https?:|^data:/.test(v) ? v : '../' + v;
+      current.appendChild(el('a', {
+        class: 'file-name', href: href, target: '_blank', rel: 'noopener noreferrer'
+      }, [name]));
+      current.appendChild(el('span', { class: 'muted' }, ['currently live']));
+    }
+    showCurrent(value, false);
+
+    var controls = el('div', { class: 'img-controls' });
+    var pathInput = el('input', { type: 'text', placeholder: 'mycv.pdf' });
+    pathInput.value = value == null ? '' : value;
+    pathInput.addEventListener('input', function () {
+      setAt(path, pathInput.value);
+      delete state.uploads[path]; // typing a path cancels a queued upload
+      showCurrent(pathInput.value, false);
+    });
+
+    var file = el('input', { type: 'file', accept: field.accept || '' });
+    file.style.marginTop = '.5rem';
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      if (!f) return;
+
+      // The extension is the real gate: browsers and OSes report PDF MIME
+      // types inconsistently, so a wrong-but-present type is rejected while a
+      // missing one falls back to the extension.
+      var lower = f.name.toLowerCase();
+      var extOk = !exts.length || exts.some(function (e) { return lower.slice(-e.length) === e; });
+      var typeOk = !field.accept || !f.type || f.type === field.accept;
+      if (!extOk || !typeOk) {
+        toast('That is not a ' + (exts.join(' / ') || 'valid') + ' file.', true);
+        file.value = ''; return;
+      }
+      if (f.size > maxBytes) {
+        toast('That file is ' + (f.size / 1048576).toFixed(1) + ' MB — the limit is ' +
+              Math.round(maxBytes / 1048576) + ' MB.', true);
+        file.value = ''; return;
+      }
+
+      var reader = new FileReader();
+      reader.onload = function () {
+        var dataUrl = String(reader.result);
+        var comma = dataUrl.indexOf(',');
+        if (comma < 0) { toast('Could not read that file.', true); file.value = ''; return; }
+        var base64 = dataUrl.slice(comma + 1);
+        var safe = f.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        // Timestamped so a re-upload never collides with the old one and
+        // visitors are never served a cached copy of the previous CV.
+        var repoPath = UPLOAD_DIR + '/' + Date.now() + '-' + safe;
+        state.uploads[path] = {
+          repoPath: repoPath, base64: base64,
+          contentType: f.type || 'application/octet-stream'
+        };
+        setAt(path, repoPath);
+        pathInput.value = repoPath;
+        showCurrent(repoPath, true);
+        toast('File queued — it goes live when you publish.');
+      };
+      reader.onerror = function () { toast('Could not read that file.', true); file.value = ''; };
+      reader.readAsDataURL(f);
+    });
+
+    controls.appendChild(current);
+    controls.appendChild(pathInput);
+    controls.appendChild(el('div', { class: 'hint' }, [
+      'Upload a new PDF to replace it (added to ' + UPLOAD_DIR + '/ on publish), ' +
+      'or type a path / URL directly. The old file stays in the repo.'
+    ]));
+    controls.appendChild(file);
+    row.appendChild(controls);
+    wrap.appendChild(row);
+    return wrap;
+  }
+
   function setPreview(img, value) {
     if (!value) { img.style.visibility = 'hidden'; return; }
     img.style.visibility = 'visible';
@@ -585,7 +687,7 @@
       field.fields.forEach(function (f) {
         // image / textarea / html span both columns for readability
         var node = renderField(f, path + '.' + idx + '.' + f.key);
-        if (f.type === 'image' || f.type === 'textarea' || f.type === 'html') node.style.gridColumn = '1 / -1';
+        if (f.type === 'image' || f.type === 'file' || f.type === 'textarea' || f.type === 'html') node.style.gridColumn = '1 / -1';
         grid.appendChild(node);
       });
       item.appendChild(grid);
@@ -730,7 +832,7 @@
       $('reviewGo').disabled = true;
     } else {
       $('reviewSummary').textContent = changes.length + ' change' + (changes.length === 1 ? '' : 's') +
-        (uploads.length ? ' and ' + uploads.length + ' new image' + (uploads.length === 1 ? '' : 's') : '') +
+        (uploads.length ? ' and ' + uploads.length + ' new file' + (uploads.length === 1 ? '' : 's') : '') +
         ' will go live on your site.';
       $('reviewGo').disabled = false;
       changes.slice(0, 200).forEach(function (c) {
@@ -739,8 +841,9 @@
         ]));
       });
       uploads.forEach(function (p) {
+        var kind = /\.pdf$/i.test(p) ? 'New document' : 'New image';
         body.appendChild(el('div', { class: 'change' }, [
-          el('strong', {}, ['New image']), el('div', { class: 'what' }, [p])
+          el('strong', {}, [kind]), el('div', { class: 'what' }, [p])
         ]));
       });
     }
@@ -763,7 +866,7 @@
     });
     files.push({ path: CONTENT_PATH, base64: utf8ToB64(JSON.stringify(state.content, null, 2) + '\n') });
 
-    var msg = 'admin: update site content' + (files.length > 1 ? ' (+' + (files.length - 1) + ' image)' : '');
+    var msg = 'admin: update site content' + (files.length > 1 ? ' (+' + (files.length - 1) + ' file)' : '');
 
     // Someone editing from another device would silently lose their work, so
     // check content.json hasn't moved under us before writing.
