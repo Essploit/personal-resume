@@ -182,7 +182,7 @@
           "desc": "SETUP IT Solutions — [Tirana/Albania]\nJune 2024 – June 2026\n\nProvided day-to-day technical support to internal staff, ensuring smooth IT operations across the company.\n\nConfigured and deployed PCs within a Windows Domain environment, maintaining proper group policies and user permissions.\n\nManaged user accounts in Windows Server, including creation, deletion, and access rights adjustments using Active Directory.\n\nInstalled, configured, and maintained network devices including routers and switches, ensuring secure and reliable network connectivity.\n\nPerformed system formatting and OS installation, including driver and essential software setup for end-users.\n\nDiagnosed and resolved hardware, software, and networking issues across the organization.\n\nMaintained IT documentation and supported onboarding/offboarding procedures from an IT infrastructure standpoint."
         },
         {
-          "company": "TIA - Tirana International Airport",
+          "company": "TIA Tirana International Airport",
           "period": "October - December 2025",
           "role": "Internship",
           "desc": "Assisted in the operation, monitoring, and maintenance of critical airport technologies, including TIA operational systems (AMS, DCS, FIDS, Public Announcement), security systems (Scanners, WTHMD, ETD, CCTV, ACIS), airport datacenter infrastructure, core networking, and cybersecurity operations. Gained hands-on experience in ensuring the reliability, security, and continuous operation of mission-critical airport systems."
@@ -288,5 +288,5 @@
     "prefix": "Copyright by",
     "name": "Erik Allmuca 2026©"
   },
-  "_rev": "2026-07-29T16:20:12.261Z"
+  "_rev": "2026-07-29T16:24:14.754Z"
 }
