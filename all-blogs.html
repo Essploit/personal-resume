@@ -18,6 +18,40 @@
     <meta name="author" 
         content="Themearray">
 
+    <!-- Color Scheme
+    ================================================== -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#F2F5F8">
+
+    <!-- Resolve and paint the theme before the first frame. theme-mode.js only
+         runs at the end of the cms.js script chain (after the content.json
+         fetch), which on mobile left the page rendering light for a second or
+         more before it flipped to dark. Keep this in sync with theme-mode.js. -->
+    <script>
+        (function () {
+            var forced = /[?&]version=(dark|light)/.exec(window.location.search);
+
+            var saved = null;
+            try {
+                if (localStorage.theme === 'dark' || localStorage.theme === 'light') saved = localStorage.theme;
+            } catch (e) { /* storage blocked (private mode) — fall through to the OS setting */ }
+
+            // Explicit switcher choice wins; otherwise follow the device. A phone
+            // is normally a fresh browser with nothing saved, so without this
+            // fallback the site rendered light even in system dark mode.
+            var theme = forced ? forced[1]
+                : saved ? saved
+                : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+            var root = document.documentElement;
+            root.classList.toggle('dark', theme === 'dark');
+            root.style.colorScheme = theme;
+
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', theme === 'dark' ? '#18191a' : '#F2F5F8');
+        })();
+    </script>
+
     <!-- Site Title
     ================================================== -->
     <title>Personal Portofolio</title>

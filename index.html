@@ -18,6 +18,40 @@
     <meta name="author" 
         content="Themearray">
 
+    <!-- Color Scheme
+    ================================================== -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#F2F5F8">
+
+    <!-- Resolve and paint the theme before the first frame. theme-mode.js only
+         runs at the end of the cms.js script chain (after the content.json
+         fetch), which on mobile left the page rendering light for a second or
+         more before it flipped to dark. Keep this in sync with theme-mode.js. -->
+    <script>
+        (function () {
+            var forced = /[?&]version=(dark|light)/.exec(window.location.search);
+
+            var saved = null;
+            try {
+                if (localStorage.theme === 'dark' || localStorage.theme === 'light') saved = localStorage.theme;
+            } catch (e) { /* storage blocked (private mode) — fall through to the OS setting */ }
+
+            // Explicit switcher choice wins; otherwise follow the device. A phone
+            // is normally a fresh browser with nothing saved, so without this
+            // fallback the site rendered light even in system dark mode.
+            var theme = forced ? forced[1]
+                : saved ? saved
+                : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+            var root = document.documentElement;
+            root.classList.toggle('dark', theme === 'dark');
+            root.style.colorScheme = theme;
+
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', theme === 'dark' ? '#18191a' : '#F2F5F8');
+        })();
+    </script>
+
     <!-- Site Title
     ================================================== -->
     <title>Personal Portofolio</title>
@@ -818,7 +852,7 @@
                                 <div class="swiper-wrapper *:space-y-5 *:text-center" data-cms-list="skills.items">
                                     <div class="swiper-slide">
                                         <div class="text-center icon">
-                                            <img src="assets/img/skill/react.svg" class="dark:grayscale" alt="React">
+                                            <img src="assets/img/skill/react.svg" alt="React">
                                         </div>
                                         <div class="progressCircle">
                                             <div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40"
@@ -832,7 +866,7 @@
                                     </div>
                                     <div class="swiper-slide">
                                         <div class="text-center icon">
-                                            <img src="assets/img/skill/django.svg" class="dark:grayscale" alt="Django">
+                                            <img src="assets/img/skill/django.svg" alt="Django">
                                         </div>
                                         <div class="progressCircle">
                                             <div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40"
@@ -846,7 +880,7 @@
                                     </div>
                                     <div class="swiper-slide">
                                         <div class="text-center icon">
-                                            <img src="assets/img/skill/cybersecurity.svg" class="dark:grayscale" alt="CyberSecurity">
+                                            <img src="assets/img/skill/cybersecurity.svg" alt="CyberSecurity">
                                         </div>
                                         <div class="progressCircle">
                                             <div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40"
@@ -860,7 +894,7 @@
                                     </div>
                                     <div class="swiper-slide">
                                         <div class="text-center icon">
-                                            <img src="assets/img/skill/html.svg" class="dark:grayscale" alt="HTML5">
+                                            <img src="assets/img/skill/html.svg" alt="HTML5">
                                         </div>
                                         <div class="progressCircle">
                                             <div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40"
@@ -874,7 +908,7 @@
                                     </div>
                                     <div class="swiper-slide">
                                         <div class="text-center icon">
-                                            <img src="assets/img/skill/css.svg" class="dark:grayscale" alt="CSS3">
+                                            <img src="assets/img/skill/css.svg" alt="CSS3">
                                         </div>
                                         <div class="progressCircle">
                                             <div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40"
@@ -888,7 +922,7 @@
                                     </div>
                                     <div class="swiper-slide">
                                         <div class="text-center icon">
-                                            <img src="assets/img/skill/linux.svg" class="dark:grayscale" alt="JavaScript">
+                                            <img src="assets/img/skill/linux.svg" alt="JavaScript">
                                         </div>
                                         <div class="progressCircle">
                                             <div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40"
@@ -902,7 +936,7 @@
                                     </div>
                                     <div class="swiper-slide">
                                         <div class="text-center icon">
-                                            <img src="assets/img/skill/microsoft.svg" class="dark:grayscale" alt="Microsoft">
+                                            <img src="assets/img/skill/microsoft.svg" alt="Microsoft">
                                         </div>
                                         <div class="progressCircle">
                                             <div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40"

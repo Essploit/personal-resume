@@ -119,7 +119,7 @@
       return '' +
         '<div class="swiper-slide">' +
           '<div class="text-center icon">' +
-            '<img src="' + esc(s.img) + '" class="dark:grayscale" alt="' + esc(s.name) + '">' +
+            '<img src="' + esc(s.img) + '" alt="' + esc(s.name) + '">' +
           '</div>' +
           '<div class="progressCircle">' +
             '<div class="relative w-32 h-32 mx-auto circle md:w-40 md:h-40" data-percent="' + esc(s.percent) + '" data-circlefill="#00BC91" data-circleempty="#777777">' +

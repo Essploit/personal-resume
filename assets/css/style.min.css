@@ -2793,6 +2793,12 @@ html.dark .portfolio_wrapper .info span {
   -webkit-text-stroke-color: white;
 }
 
+/* Skill slider logos keep their brand colours in dark mode — the template
+   desaturated them, and CMS-rendered slides must not reintroduce that. */
+html.dark .skills-slider .icon img {
+  filter: none;
+}
+
 /*------------------------------------------------------------------
                 THANKS FOR HAVING WITH MINFO
 ------------------------------------------------------------------*/
