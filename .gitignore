@@ -8,3 +8,6 @@ Thumbs.db
 
 # Local setup notes — contains the admin password, keep private
 SETUP.md
+
+# Local deploy helper — prompts for the GitHub PAT, keep private
+push.sh
