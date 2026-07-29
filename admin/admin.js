@@ -575,12 +575,17 @@
       var f = file.files && file.files[0];
       if (!f) return;
 
-      // The extension is the real gate: browsers and OSes report PDF MIME
-      // types inconsistently, so a wrong-but-present type is rejected while a
-      // missing one falls back to the extension.
+      // The extension is the real gate. Platforms label PDFs inconsistently
+      // (application/pdf, application/x-pdf, application/acrobat), so an exact
+      // MIME match would reject valid files; the reported type is only used to
+      // catch something obviously different, like an image renamed to .pdf.
       var lower = f.name.toLowerCase();
       var extOk = !exts.length || exts.some(function (e) { return lower.slice(-e.length) === e; });
-      var typeOk = !field.accept || !f.type || f.type === field.accept;
+      // Compare only the top-level type ("application"), which every PDF
+      // label shares, so an image renamed to .pdf is still caught.
+      var want = (field.accept || '').split('/')[0];
+      var got = (f.type || '').split('/')[0].toLowerCase();
+      var typeOk = !field.accept || !f.type || got === want;
       if (!extOk || !typeOk) {
         toast('That is not a ' + (exts.join(' / ') || 'valid') + ' file.', true);
         file.value = ''; return;
