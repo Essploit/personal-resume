@@ -138,22 +138,22 @@
     "items": [
       {
         "name": "Networking",
-        "img": "assets/uploads/1785194937935-networking-connector-svgrepo-com.svg",
+        "img": "assets/uploads/1785333022838-networking-connector-svgrepo-com_1_.svg",
         "percent": 70
       },
       {
         "name": "Automation",
-        "img": "assets/uploads/1785194951908-automation-svgrepo-com.svg",
-        "percent": 50
+        "img": "assets/uploads/1785333087221-automation-svgrepo-com_1_.svg",
+        "percent": 70
       },
       {
         "name": "Cybersecurity",
-        "img": "assets/uploads/1785194961641-bug-shield-svgrepo-com.svg",
+        "img": "assets/uploads/1785333031747-bug-shield-svgrepo-com_1_.svg",
         "percent": 60
       },
       {
         "name": "AI",
-        "img": "assets/uploads/1785194966751-cloud-computing-ai-svgrepo-com.svg",
+        "img": "assets/uploads/1785333040912-cloud-computing-ai-svgrepo-com_1_.svg",
         "percent": 80
       },
       {
@@ -282,5 +282,5 @@
     "prefix": "Copyright by",
     "name": "Erik Allmuca 2026©"
   },
-  "_rev": "2026-07-27T23:31:19.442Z"
+  "_rev": "2026-07-29T13:51:47.863Z"
 }
